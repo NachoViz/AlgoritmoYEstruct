@@ -1,0 +1,275 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// Definición de la clase Post
+class Post {
+public:
+    string title;
+    string usuario;
+    string fecha;
+    string content;
+    int votos;
+
+    vector<Post*> comments;
+
+    Post(string title, string usuario, string fecha, string content) {
+        this->title = title;
+        this->usuario = usuario;
+        this->fecha = fecha;
+        this->content = content;
+        this->votos = 0;
+    }
+
+    void AddComment(Post* comment) {
+        comments.push_back(comment);
+    }
+
+    void RemoveComment(Post* comment) {
+        comments.erase(remove(comments.begin(), comments.end(), comment), comments.end());
+    }
+
+    void Vote(int value) {
+        votos += value;
+    }
+
+    void PrintPostInfo() {
+        cout << "Titulo: " << title << endl;
+        cout << "Usuario: " << usuario << endl;
+        cout << "Fecha: " << fecha << endl;
+        cout << "Contenido: " << content << endl;
+        cout << "Votos: " << votos << endl;
+    }
+
+    void PrintAllComments() {
+        PrintPostInfo();
+        cout << "Comentarios: " << endl;
+        PrintComments(comments, 1);
+    }
+
+private:
+    void PrintComments(const vector<Post*>& comments, int level) {
+        for (vector<Post*>::const_iterator it = comments.begin(); it != comments.end(); ++it) {
+            cout << string(level * 2, ' ') << "- ";
+            (*it)->PrintPostInfo();
+            PrintComments((*it)->comments, level + 1);
+        }
+    }
+}
+// Clase Nodo del árbol binario
+class BinaryTreeNode {
+public:
+    Post* post;
+    BinaryTreeNode* left;
+    BinaryTreeNode* right;
+
+    BinaryTreeNode(Post* post) {
+        this->post = post;
+        left = NULL;
+        right = NULL;
+    }
+}
+
+//Clase Árbol Binario
+class BinaryTree {
+private:
+    BinaryTreeNode* root;
+
+public:
+    BinaryTree() {
+        root = NULL;
+    }
+
+    ~BinaryTree() {
+        DestroyTree(root);
+    }
+
+    void Insert(Post* post) {
+        root = InsertNode(root, post);
+    }
+
+    void Remove(Post* post) {
+        root = RemoveNode(root, post);
+    }
+
+    void VotePost(Post* post, int value) {
+        post->Vote(value);
+    }
+
+    void AddCommentToPost(Post* post, Post* comment) {
+        post->AddComment(comment);
+    }
+
+    void RemoveCommentFromPost(Post* post, Post* comment) {
+        post->RemoveComment(comment);
+    }
+
+    void PrintPostWithInfo(Post* post) {
+        post->PrintPostInfo();
+    }
+
+    void PrintAllPosts() {
+        PrintInOrder(root);
+    }
+
+    void PrintMostVotedComment() {
+        Post* mostVotedComment = NULL;
+        int maxvotos = numeric_limits<int>::min();
+
+        FindMostVotedComment(root, mostVotedComment, maxvotos);
+
+        if (mostVotedComment != NULL) {
+            cout << "Most Voted Comment: " << endl;
+            mostVotedComment->PrintPostInfo();
+        }
+    }
+
+    void PrintUserParticipation(const string& usuario) {
+        vector<Post*> userComments;
+        FindUserComments(root, usuario, userComments);
+
+        cout << "User Participation for " << usuario << ": " << endl;
+        sort(userComments.begin(), userComments.end(), CompareByfecha);
+        for (const auto& comment : userComments) {
+            comment->PrintPostInfo();
+        }
+    }
+
+private:
+    void DestroyTree(BinaryTreeNode* node) {
+        if (node != NULL) {
+            DestroyTree(node->left);
+            DestroyTree(node->right);
+            delete node;
+        }
+    }
+
+    BinaryTreeNode* InsertNode(BinaryTreeNode* node, Post* post) {
+        if (node == NULL) {
+            return new BinaryTreeNode(post);
+        }
+
+        if (post->fecha < node->post->fecha) {
+            node->left = InsertNode(node->left, post);
+        }
+        else {
+            node->right = InsertNode(node->right, post);
+        }
+
+        return node;
+    }
+
+    BinaryTreeNode* RemoveNode(BinaryTreeNode* node, Post* post) {
+        if (node == NULL) {
+            return NULL;
+        }
+
+        if (post->fecha < node->post->fecha) {
+            node->left = RemoveNode(node->left, post);
+        }
+        else if (post->fecha > node->post->fecha) {
+            node->right = RemoveNode(node->right, post);
+        }
+        else {
+            if (node->left == NULL && node->right == NULL) {
+                delete node;
+                return NULL;
+            }
+            else if (node->left == NULL) {
+                BinaryTreeNode* temp = node->right;
+                delete node;
+                return temp;
+            }
+            else if (node->right == NULL) {
+                BinaryTreeNode* temp = node->left;
+                delete node;
+                return temp;
+            }
+            else {
+                BinaryTreeNode* successor = FindMinNode(node->right);
+                node->post = successor->post;
+                node->right = RemoveNode(node->right, successor->post);
+            }
+        }
+
+        return node;
+    }
+
+    BinaryTreeNode* FindMinNode(BinaryTreeNode* node) {
+        while (node->left != NULL) {
+            node = node->left;
+        }
+        return node;
+    }
+
+    void PrintInOrder(BinaryTreeNode* node) {
+        if (node != NULL) {
+            PrintInOrder(node->left);
+            node->post->PrintPostInfo();
+            PrintInOrder(node->right);
+        }
+    }
+
+    void FindMostVotedComment(BinaryTreeNode* node, Post*& mostVotedComment, int& maxvotos) {
+        if (node != NULL) {
+            if (node->post->votos > maxvotos) {
+                mostVotedComment = node->post;
+                maxvotos = node->post->votos;
+            }
+
+            FindMostVotedComment(node->left, mostVotedComment, maxvotos);
+            FindMostVotedComment(node->right, mostVotedComment, maxVotes);
+        }
+    }
+
+    void FindUserComments(BinaryTreeNode* node, const string& usuario, vector<Post*>& userComments) {
+        if (node != NULL) {
+            if (node->post->usuario == usuario) {
+                userComments.push_back(node->post);
+            }
+
+            FindUserComments(node->left, usuario, userComments);
+            FindUserComments(node->right, usuario, userComments);
+        }
+    }
+
+    static bool CompareByfecha(const Post* a, const Post* b) {
+        return a->fecha < b->fecha;
+    }
+}
+
+int main() {
+    BinaryTree postTree;
+
+    // Crear nuevos posts
+    Post post1("Title 1", "User1", "2023-05-20", "Content 1");
+    Post post2("Title 2", "User2", "2023-05-21", "Content 2");
+    Post post3("Title 3", "User1", "2023-05-22", "Content 3");
+
+    // Insertar posts en el árbol binario
+    postTree.Insert(&post1);
+    postTree.Insert(&post2);
+    postTree.Insert(&post3);
+
+    // Agregar comentarios a los posts
+    Post comment1("Comment 1", "User3", "2023-05-23", "Comment content 1");
+    postTree.AddCommentToPost(&post1, &comment1);
+
+    Post comment2("Comment 2", "User2", "2023-05-24", "Comment content 2");
+    postTree.AddCommentToPost(&post1, &comment2);
+
+    // Imprimir información de un post
+    postTree.PrintPostWithInfo(&post1);
+
+    // Imprimir todos los posts y sus comentarios
+    postTree.PrintAllPosts();
+
+    // Imprimir el comentario más votado
+    postTree.PrintMostVotedComment();
+
+    // Imprimir participación de un usuario
+    postTree.PrintUserParticipation("User1");
+
+    return 0;
+}
