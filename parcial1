@@ -1,1 +1,107 @@
 
+#include <fstream>
+#include <stack>
+#include <queue>
+#include <string>
+#include <cstdlib>
+#include <iostream>
+#include <sstream>
+
+using namespace std;
+
+struct llavelista {
+    string llave;
+    string lista;
+};
+class Nodo {
+private:
+    std::string dato;
+    Nodo* next;
+
+public:
+    void set_next(Nodo* nodo) { next = nodo; }
+    Nodo* get_next() { return next; }
+    Nodo() : dato(""), next(nullptr) {}
+    Nodo(std::string d) : dato(d), next(nullptr) {}
+    bool es_vacio() { return next == nullptr; }
+};
+
+class J_lista {
+private:
+    Nodo* c;
+
+public:
+    J_lista() : c(new Nodo()) {}
+    J_lista(Nodo* n) : c(n) {}
+
+    J_lista resto() {
+        return J_lista(c->get_next());
+    }
+
+    void add(Nodo* dato) {
+        if (c == nullptr)
+            c = dato;
+        else {
+            Nodo* temp = c;
+            while (temp->get_next() != nullptr)
+                temp = temp->get_next();
+            temp->set_next(dato);
+        }
+    }
+
+    bool es_vacia() { return c->es_vacio(); }
+
+    void borrar_last() {
+        if (!es_vacia()) {
+            if ((c->get_next())->get_next() == nullptr) {
+                delete c->get_next();
+                c->set_next(nullptr);
+            } else {
+                resto().borrar_last();
+            }
+        }
+    }
+};
+
+
+class JSON_AYED {
+public:
+    // Método para validar y procesar la expresión
+    void procesarExpresion(const std::string& expresion) {
+        std::stack<char> pila;
+        std::queue<char> buffer;
+
+        for (char c : expresion) {
+            if (c == '{' || c == '[') {
+                pila.push(c);
+                buffer.push(c);
+            } else if (c == '}' || c == ']') {
+                if (pila.empty() || (c == '}' && pila.top() != '{') || (c == ']' && pila.top() != '[')) {
+                    std::cout << "Error de sintaxis en la expresion." << std::endl;
+                    return;
+                }
+                pila.pop();
+                buffer.push(c);
+            } else if (c == ',' || c == ':' || c == '"') {
+                buffer.push(c);
+            } else if (!std::isspace(c)) {
+                std::cout << "Caracter invalido en la expresion: " << c << std::endl;
+                return;
+            }
+        }
+
+        if (!pila.empty()) {
+            std::cout << "Error: Se esperaba cerrar " << (pila.top() == '{' ? '}' : ']') << std::endl;
+            return;
+        }
+
+        // Imprimir la expresión sin espacios, tabulaciones ni saltos de línea
+        while (!buffer.empty()) {
+            char c = buffer.front();
+            if (!std::isspace(c)) {
+                std::cout << c;
+            }
+            buffer.pop();
+        }
+    }
+};
